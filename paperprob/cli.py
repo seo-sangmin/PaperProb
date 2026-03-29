@@ -8,7 +8,6 @@ import anthropic
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
 from paperprob.compute import estimate_probabilities, jeffrey_conditionalization
 from paperprob.extract import Claim, extract_claims, read_paper
@@ -16,7 +15,7 @@ from paperprob.extract import Claim, extract_claims, read_paper
 console = Console()
 
 
-def display_claim(index: int, total: int, claim: Claim) -> None:
+def display_claim(index: int, total: int, claim: Claim, pr_claim: float) -> None:
     """Display a single claim with its reasons, probabilities, and Pr(claim)."""
     # Header
     console.rule(f"[bold]Claim {index} of {total}[/bold]")
@@ -56,13 +55,6 @@ def display_claim(index: int, total: int, claim: Claim) -> None:
     console.print(table)
     console.print()
 
-    # Compute Pr(claim)
-    pr_claim = jeffrey_conditionalization(
-        claim.pr_evidence,
-        claim.pr_claim_given_evidence,
-        claim.pr_claim_given_not_evidence,
-    )
-
     # Result panel
     formula = (
         f"Pr(C) = Pr(C|E) × Pr(E) + Pr(C|¬E) × (1 − Pr(E))\n"
@@ -72,8 +64,6 @@ def display_claim(index: int, total: int, claim: Claim) -> None:
     )
     console.print(Panel(formula, title="[bold]Jeffrey Conditionalization[/bold]", expand=False))
     console.print()
-
-    return pr_claim
 
 
 def claims_to_json(claims: list[Claim], pr_claims: list[float]) -> str:
@@ -150,23 +140,22 @@ def main() -> None:
             console.print(f"[bold red]Error estimating probabilities:[/bold red] {e}")
             sys.exit(1)
 
+    # Compute Pr(claim) for each claim
+    pr_claims = [
+        jeffrey_conditionalization(
+            c.pr_evidence, c.pr_claim_given_evidence, c.pr_claim_given_not_evidence
+        )
+        for c in claims
+    ]
+
     # Display results
-    pr_claims = []
     if args.output_json:
-        for claim in claims:
-            pr_c = jeffrey_conditionalization(
-                claim.pr_evidence,
-                claim.pr_claim_given_evidence,
-                claim.pr_claim_given_not_evidence,
-            )
-            pr_claims.append(pr_c)
         print(claims_to_json(claims, pr_claims))
     else:
         console.print(Panel(f"[bold]{args.paper}[/bold]  |  Model: {args.model}", title="PaperProb"))
         console.print()
-        for i, claim in enumerate(claims, 1):
-            pr_c = display_claim(i, len(claims), claim)
-            pr_claims.append(pr_c)
+        for i, (claim, pr_c) in enumerate(zip(claims, pr_claims), 1):
+            display_claim(i, len(claims), claim, pr_c)
 
 
 if __name__ == "__main__":
