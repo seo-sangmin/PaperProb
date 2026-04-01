@@ -1,0 +1,17 @@
+[project]
+name = "paperprob"
+version = "0.1.0"
+description = "Compute the probability of research paper claims using Jeffrey conditionalization"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40",
+    "pdfplumber>=0.11",
+    "rich>=13.0",
+]
+
+[project.scripts]
+paperprob = "paperprob.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
