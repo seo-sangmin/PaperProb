@@ -1,4 +1,4 @@
-# PaperProb
+# paperprob
 
 Estimate the probability of a research paper's claims using [Jeffrey conditionalization](https://plato.stanford.edu/entries/bayes-theorem/#4).
 
